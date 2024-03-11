@@ -1,8 +1,8 @@
 type: object
 properties:
-    foo: { type: integer, example: 1 }
-    hey: { type: string, example: ho }
-    bar: { type: string, example: foo }
+    foo: { type: integer, examples: [1] }
+    hey: { type: string, examples: [ho] }
+    bar: { type: string, examples: [foo] }
 required:
     - foo
     - bar

@@ -9,4 +9,4 @@
     required: true
     description: 'A foo prop.'
     schema: { type: string }
-    example: wow
+    examples: [wow]

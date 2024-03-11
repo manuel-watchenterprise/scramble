@@ -55,7 +55,7 @@ class Parameter
             $result['schema'] = $this->schema->toArray();
         }
 
-        return array_merge($result, $this->example instanceof MissingExample ? [] : ['example' => $this->example]);
+        return array_merge($result, $this->example instanceof MissingExample ? [] : ['examples' => [$this->example]]);
     }
 
     public function required(bool $required)
