@@ -61,7 +61,7 @@ abstract class Type
             'format' => $this->format,
             'description' => $this->description,
             'enum' => count($this->enum) ? $this->enum : null,
-        ]), $this->example instanceof MissingExample ? [] : ['example' => $this->example]);
+        ]), $this->example instanceof MissingExample ? [] : ['examples' => [$this->example]]);
     }
 
     public function setDescription(string $description): Type

@@ -26,7 +26,7 @@ it('transforms simple types', function ($type, $openApiArrayed) {
 })->with([
     [new IntegerType(), ['type' => 'integer']],
     [new StringType(), ['type' => 'string']],
-    [new LiteralStringType('wow'), ['type' => 'string', 'example' => 'wow']],
+    [new LiteralStringType('wow'), ['type' => 'string', 'examples' => ['wow']]],
     [new BooleanType(), ['type' => 'boolean']],
     [new ArrayType([
         new ArrayItemType_(0, new StringType()),
