@@ -12,10 +12,12 @@ use Dedoc\Scramble\Support\OperationExtensions\RulesExtractor\FormRequestRulesEx
 use Dedoc\Scramble\Support\OperationExtensions\RulesExtractor\RulesToParameters;
 use Dedoc\Scramble\Support\OperationExtensions\RulesExtractor\ValidateCallExtractor;
 use Dedoc\Scramble\Support\RouteInfo;
+use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Routing\Route;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use PhpParser\Node\Stmt\ClassMethod;
+use PHPStan\PhpDocParser\Ast\PhpDoc\PhpDocNode;
 use Throwable;
 use function in_array;
 
@@ -33,7 +35,12 @@ class RequestBodyExtension extends OperationExtension
             if (count($bodyParams)) {
                 if (! in_array($operation->method, config('scramble.disallow_request_body'))) {
                     $operation->addRequestBodyObject(
-                        RequestBodyObject::make()->setContent($mediaType, Schema::createFromParameters($bodyParams))
+                        RequestBodyObject::make()
+                            ->setContent(
+                                $mediaType,
+                                Schema::createFromParameters($bodyParams)
+                                    ->setTitle($this->getTitle($routeInfo))
+                            )
                     );
                 } else {
                     $operation->addParameters($bodyParams);
@@ -117,5 +124,40 @@ class RequestBodyExtension extends OperationExtension
         }
 
         return [$rules, array_filter($nodesResults)];
+    }
+
+    private function getTitle(RouteInfo $routeInfo): string
+    {
+        return $this->getTitleFromPhpDoc($routeInfo->phpDoc())
+            ?? $this->getTitleFromMethodParameter($routeInfo->reflectionMethod())
+            ?? $this->getTitleFromClassName($routeInfo->className());
+    }
+
+    protected function getTitleFromPhpDoc(PhpDocNode $docNode): ?string
+    {
+        $tags = $docNode->getTagsByName('@request');
+
+        if (!$tags || !($tag = reset($tags))) {
+            return null;
+        }
+
+        return Str::of($tag->value->value)->explode(' ')->first();
+    }
+
+    protected function getTitleFromMethodParameter(\ReflectionMethod $method): ?string
+    {
+        return collect($method->getParameters())
+            ->map(fn (\ReflectionParameter $parameter) => $parameter->getType()->getName())
+            ->filter(fn (string $typeName) => is_subclass_of($typeName, FormRequest::class))
+            ->map(fn (string $typeName) => class_basename($typeName))
+            ->first();
+    }
+
+    protected function getTitleFromClassName(string $className): string
+    {
+        return Str::of(class_basename($className))
+            ->replaceMatches('/(Api)?Controller/', '')
+            ->append('Request')
+            ->toString();
     }
 }
