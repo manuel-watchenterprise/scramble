@@ -34,6 +34,8 @@ class RequestBodyExtension extends OperationExtension
 
             if (count($bodyParams)) {
                 if (! in_array($operation->method, config('scramble.disallow_request_body'))) {
+                    $this->applyNestedTitles($bodyParams);
+
                     $operation->addRequestBodyObject(
                         RequestBodyObject::make()
                             ->setContent(
@@ -126,7 +128,7 @@ class RequestBodyExtension extends OperationExtension
         return [$rules, array_filter($nodesResults)];
     }
 
-    private function getTitle(RouteInfo $routeInfo): string
+    protected function getTitle(RouteInfo $routeInfo): string
     {
         return $this->getTitleFromPhpDoc($routeInfo->phpDoc())
             ?? $this->getTitleFromMethodParameter($routeInfo->reflectionMethod())
@@ -159,5 +161,38 @@ class RequestBodyExtension extends OperationExtension
             ->replaceMatches('/(Api)?Controller/', '')
             ->append('Request')
             ->toString();
+    }
+
+    /**
+     * @param Parameter[] $bodyParams
+     */
+    protected function applyNestedTitles(array &$bodyParams): void
+    {
+        $typePattern = '/type:[a-zA-Z_][a-zA-Z0-9_]+/';
+
+        foreach ($bodyParams as $param) {
+            if (
+                !Str::of($param->description)->isMatch($typePattern)
+                || !($param->schema->type instanceof ObjectType)
+            ) {
+                continue;
+            }
+
+            $type = Str::of($param->description)
+                ->match($typePattern)
+                ->replace('type:', '')
+                ->toString();
+
+            $param->schema->setTitle($type);
+            $param->schema->type->setTitle($type);
+
+            $param->description(
+                Str::of($param->description)
+                    ->replaceMatches($typePattern, '')
+                    ->trim()
+                    ->replaceMatches('/  +/', ' ')
+                    ->toString()
+            );
+        }
     }
 }

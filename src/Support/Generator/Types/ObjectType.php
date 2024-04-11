@@ -10,6 +10,8 @@ class ObjectType extends Type
     /** @var string[] */
     public array $required = [];
 
+    public string $title = '';
+
     private ?Type $additionalProperties = null;
 
     public function __construct()
@@ -51,6 +53,13 @@ class ObjectType extends Type
         return $this;
     }
 
+    public function setTitle(string $title): self
+    {
+        $this->title = $title;
+
+        return $this;
+    }
+
     public function toArray()
     {
         $result = parent::toArray();
@@ -69,6 +78,10 @@ class ObjectType extends Type
 
         if ($this->additionalProperties) {
             $result['additionalProperties'] = $this->additionalProperties->toArray();
+        }
+
+        if ($this->title) {
+            $result['title'] = $this->title;
         }
 
         return $result;
