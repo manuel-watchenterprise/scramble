@@ -7,6 +7,7 @@ use Dedoc\Scramble\Support\Generator\Operation;
 use Dedoc\Scramble\Support\Generator\Parameter;
 use Dedoc\Scramble\Support\Generator\RequestBodyObject;
 use Dedoc\Scramble\Support\Generator\Schema;
+use Dedoc\Scramble\Support\Generator\Types\ArrayType;
 use Dedoc\Scramble\Support\Generator\Types\ObjectType;
 use Dedoc\Scramble\Support\OperationExtensions\RulesExtractor\FormRequestRulesExtractor;
 use Dedoc\Scramble\Support\OperationExtensions\RulesExtractor\RulesToParameters;
@@ -171,20 +172,27 @@ class RequestBodyExtension extends OperationExtension
         $typePattern = '/type:[a-zA-Z_][a-zA-Z0-9_]+/';
 
         foreach ($bodyParams as $param) {
-            if (
-                !Str::of($param->description)->isMatch($typePattern)
-                || !($param->schema->type instanceof ObjectType)
-            ) {
+            if (!Str::of($param->description)->isMatch($typePattern)) {
                 continue;
             }
 
-            $type = Str::of($param->description)
+            $type = $param->schema->type;
+
+            if ($type instanceof ArrayType) {
+                $type = $type->items;
+            }
+
+            if (!($type instanceof ObjectType)) {
+                continue;
+            }
+
+            $title = Str::of($param->description)
                 ->match($typePattern)
                 ->replace('type:', '')
                 ->toString();
 
-            $param->schema->setTitle($type);
-            $param->schema->type->setTitle($type);
+            $param->schema->setTitle($title);
+            $type->setTitle($title);
 
             $param->description(
                 Str::of($param->description)
